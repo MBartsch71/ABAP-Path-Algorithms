@@ -15,18 +15,10 @@ CLASS ycl_mbh_bfs_simple DEFINITION
            END OF visited_node.
     TYPES visited_nodes TYPE HASHED TABLE OF visited_node WITH UNIQUE KEY table_line.
 
-    TYPES: BEGIN OF parent_node,
-             key   TYPE i,
-             value TYPE i,
-           END OF parent_node.
-    TYPES parent_map TYPE HASHED TABLE OF parent_node WITH UNIQUE KEY table_line.
-
     METHODS bfs IMPORTING graph         TYPE graph
                 RETURNING VALUE(result) TYPE stringtab.
 
   PRIVATE SECTION.
-    TYPES:
-      ty_queue TYPE STANDARD TABLE OF i WITH EMPTY KEY.
     DATA queue TYPE STANDARD TABLE OF i WITH EMPTY KEY.
     DATA visited TYPE visited_nodes.
 
