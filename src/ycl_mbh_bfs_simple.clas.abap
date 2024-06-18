@@ -8,19 +8,30 @@ CLASS ycl_mbh_bfs_simple DEFINITION
              id         TYPE i,
              neighbours TYPE neighbours,
            END OF node.
-    TYPES graph TYPE STANDARD TABLE OF node WITH EMPTY KEY.
+    TYPES graph_nodes TYPE STANDARD TABLE OF node WITH EMPTY KEY.
 
     TYPES: BEGIN OF visited_node,
              id TYPE i,
            END OF visited_node.
     TYPES visited_nodes TYPE HASHED TABLE OF visited_node WITH UNIQUE KEY table_line.
 
-    METHODS bfs IMPORTING graph         TYPE graph
-                RETURNING VALUE(result) TYPE stringtab.
+    TYPES: BEGIN OF parent_node,
+             node   TYPE i,
+             parent TYPE i,
+           END OF parent_node.
+    TYPES parent_nodes TYPE HASHED TABLE OF parent_node WITH UNIQUE KEY table_line.
+
+    METHODS constructor IMPORTING graph TYPE graph_nodes.
+
+    METHODS bfs RETURNING VALUE(result) TYPE stringtab.
+
+    METHODS get_parent_nodes RETURNING VALUE(result) TYPE parent_nodes.
 
   PRIVATE SECTION.
-    DATA queue TYPE STANDARD TABLE OF i WITH EMPTY KEY.
+    DATA graph TYPE graph_nodes.
+    DATA queue TYPE SORTED TABLE OF i WITH NON-UNIQUE KEY primary_key COMPONENTS table_line.
     DATA visited TYPE visited_nodes.
+    DATA parents TYPE parent_nodes.
 
     METHODS dequeue RETURNING VALUE(result) TYPE i.
 
@@ -31,18 +42,28 @@ CLASS ycl_mbh_bfs_simple DEFINITION
 
     METHODS record_visited_node IMPORTING node TYPE i.
 
-    METHODS get_neighbours_from_node IMPORTING graph         TYPE graph
-                                               node          TYPE i
+    METHODS get_neighbours_from_node IMPORTING node          TYPE i
                                      RETURNING VALUE(result) TYPE neighbours.
+
+
+    METHODS build_parent_map
+      IMPORTING
+        parent_node TYPE i
+        nodes       TYPE ycl_mbh_bfs_simple=>neighbours.
 ENDCLASS.
 
 
 
 CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
 
+  METHOD constructor.
+    me->graph = graph.
+  ENDMETHOD.
+
   METHOD bfs.
 
     queue = VALUE #( ( graph[ 1 ]-id ) ).
+    parents = VALUE #( ( node = 1 parent = 0 ) ).
 
     WHILE queue IS NOT INITIAL.
 
@@ -53,8 +74,9 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
 
       record_visited_node( node ).
 
-      DATA(neighbours) =  get_neighbours_from_node( graph = graph
-                                                    node  = node ).
+      DATA(neighbours) =  get_neighbours_from_node( node ).
+      build_parent_map( parent_node = node
+                        nodes       = neighbours ).
       enqueue( neighbours ).
 
     ENDWHILE.
@@ -83,6 +105,19 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
 
   METHOD get_neighbours_from_node.
     result = graph[ node ]-neighbours.
+  ENDMETHOD.
+
+  METHOD get_parent_nodes.
+    result = parents.
+  ENDMETHOD.
+
+  METHOD build_parent_map.
+    LOOP AT nodes REFERENCE INTO DATA(node).
+      IF already_visited( node->* ).
+        CONTINUE.
+      ENDIF.
+      parents = VALUE #( BASE parents ( node = node->* parent = parent_node ) ).
+    ENDLOOP.
   ENDMETHOD.
 
 ENDCLASS.
