@@ -13,19 +13,27 @@ CLASS ycl_mbh_bfs_simple DEFINITION
     TYPES: BEGIN OF visited_node,
              id TYPE i,
            END OF visited_node.
-    TYPES visited_nodes TYPE HASHED TABLE OF visited_node WITH UNIQUE KEY table_line.
+    TYPES visited_nodes TYPE SORTED TABLE OF visited_node WITH UNIQUE KEY table_line.
 
     TYPES: BEGIN OF parent_node,
-             node   TYPE i,
-             parent TYPE i,
+             node        TYPE i,
+             parent      TYPE i,
+             distance_to TYPE i,
            END OF parent_node.
-    TYPES parent_nodes TYPE HASHED TABLE OF parent_node WITH UNIQUE KEY table_line.
+    TYPES parent_nodes TYPE SORTED TABLE OF parent_node WITH UNIQUE KEY table_line
+                                                        WITH NON-UNIQUE SORTED KEY distance COMPONENTS node distance_to.
 
     METHODS constructor IMPORTING graph TYPE graph_nodes.
 
     METHODS bfs RETURNING VALUE(result) TYPE stringtab.
 
     METHODS get_parent_nodes RETURNING VALUE(result) TYPE parent_nodes.
+    METHODS find_shortest_path
+      IMPORTING
+        goal          TYPE i
+      RETURNING
+        VALUE(result) TYPE i.
+
 
   PRIVATE SECTION.
     DATA graph TYPE graph_nodes.
@@ -116,8 +124,18 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
       IF already_visited( node->* ).
         CONTINUE.
       ENDIF.
-      parents = VALUE #( BASE parents ( node = node->* parent = parent_node ) ).
+      DATA(distance) = parents[ node = parent_node ]-distance_to + 1.
+      parents = VALUE #( BASE parents ( node = node->* parent = parent_node distance_to = distance ) ).
     ENDLOOP.
+  ENDMETHOD.
+
+
+  METHOD find_shortest_path.
+    DATA paths_to_target TYPE SORTED TABLE OF parent_node WITH UNIQUE KEY primary_key COMPONENTS node distance_to.
+
+    bfs( ).
+    paths_to_target = FILTER #( get_parent_nodes( ) USING KEY distance WHERE node = goal  ).
+    result = paths_to_target[ 1 ]-distance_to.
   ENDMETHOD.
 
 ENDCLASS.
