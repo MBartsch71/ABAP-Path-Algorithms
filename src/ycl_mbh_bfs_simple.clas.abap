@@ -30,8 +30,6 @@ CLASS ycl_mbh_bfs_simple DEFINITION
     METHODS build_parent_map IMPORTING parent_node TYPE string
                                        nodes       TYPE stringtab.
 
-    METHODS get_parent_nodes RETURNING VALUE(result) TYPE yif_mbh_bfs=>parent_nodes.
-
     METHODS initialization IMPORTING start_node TYPE string.
 
     METHODS initialize_queue IMPORTING start_node TYPE string.
@@ -50,6 +48,12 @@ CLASS ycl_mbh_bfs_simple DEFINITION
     METHODS determine_next_parent IMPORTING paths_to_target TYPE yif_mbh_bfs=>parent_nodes_asc_distance
                                   RETURNING VALUE(result)   TYPE string.
 
+    METHODS determine_shortest_distance IMPORTING goal          TYPE string
+                                        RETURNING VALUE(result) TYPE string.
+
+    METHODS determine_nodes_to_goal IMPORTING goal          TYPE string
+                                    RETURNING VALUE(result) TYPE stringtab.
+
 ENDCLASS.
 
 
@@ -62,14 +66,26 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
 
   METHOD yif_mbh_bfs~get_distance_of_shortest_path.
     perform_path_search( start_node ).
+    result = determine_shortest_distance( goal ).
+  ENDMETHOD.
 
+  METHOD yif_mbh_bfs~get_nodes_of_shortest_path.
+    perform_path_search( start_node ).
+    result = determine_nodes_to_goal( goal ).
+  ENDMETHOD.
+
+  METHOD perform_path_search.
+    initialization( start_node ).
+    process_graph( ).
+  ENDMETHOD.
+
+  METHOD determine_shortest_distance.
     DATA(paths_to_target) = filter_paths_to_node( goal ).
     result = paths_to_target[ 1 ]-distance_to.
   ENDMETHOD.
 
-  METHOD yif_mbh_bfs~get_nodes_of_shortest_path.
+  METHOD determine_nodes_to_goal.
     DATA(next_parent) = goal.
-    perform_path_search( start_node ).
 
     WHILE next_parent IS NOT INITIAL.
       DATA(paths_to_target) = filter_paths_to_node( next_parent ).
@@ -79,13 +95,8 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
     ENDWHILE.
   ENDMETHOD.
 
-  METHOD perform_path_search.
-    initialization( start_node ).
-    process_graph( ).
-  ENDMETHOD.
-
   METHOD filter_paths_to_node.
-    result  = FILTER yif_mbh_bfs=>parent_nodes_asc_distance( get_parent_nodes( ) WHERE node = node  ).
+    result  = FILTER yif_mbh_bfs=>parent_nodes_asc_distance( parents WHERE node = node  ).
   ENDMETHOD.
 
   METHOD process_graph.
@@ -110,12 +121,12 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
     initialize_parent_structure( start_node ).
   ENDMETHOD.
 
-  METHOD initialize_parent_structure.
-    parents = VALUE #( ( node = start_node parent = || ) ).
-  ENDMETHOD.
-
   METHOD initialize_queue.
     queue = VALUE #( ( start_node ) ).
+  ENDMETHOD.
+
+  METHOD initialize_parent_structure.
+    parents = VALUE #( ( node = start_node parent = || ) ).
   ENDMETHOD.
 
   METHOD enqueue.
@@ -141,18 +152,14 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
     result = graph[ id = node ]-neighbours.
   ENDMETHOD.
 
-  METHOD get_parent_nodes.
-    result = parents.
-  ENDMETHOD.
-
   METHOD build_parent_map.
     LOOP AT nodes REFERENCE INTO DATA(node).
       IF already_visited( node->* ).
         CONTINUE.
       ENDIF.
       DATA(distance) = parents[ node = parent_node ]-distance_to + 1.
-      parents = VALUE #( BASE parents ( node = node->*
-                                        parent = parent_node
+      parents = VALUE #( BASE parents ( node        = node->*
+                                        parent      = parent_node
                                         distance_to = distance ) ).
     ENDLOOP.
   ENDMETHOD.

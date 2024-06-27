@@ -21,8 +21,6 @@ CLASS bfs_test DEFINITION FINAL FOR TESTING
 
     METHODS setup.
 
-
-
     METHODS detect_shortest_step_to_goal FOR TESTING.
     METHODS recreate_shortest_path FOR TESTING.
     METHODS use_non_numeric_graph FOR TESTING.
