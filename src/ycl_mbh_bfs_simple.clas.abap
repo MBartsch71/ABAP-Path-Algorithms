@@ -79,6 +79,11 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
     process_graph( ).
   ENDMETHOD.
 
+  METHOD initialization.
+    initialize_queue( start_node ).
+    initialize_parent_structure( start_node ).
+  ENDMETHOD.
+
   METHOD determine_shortest_distance.
     DATA(paths_to_target) = filter_paths_to_node( goal ).
     result = paths_to_target[ 1 ]-distance_to.
@@ -114,11 +119,6 @@ CLASS ycl_mbh_bfs_simple IMPLEMENTATION.
                         nodes       = neighbours ).
       enqueue( neighbours ).
     ENDWHILE.
-  ENDMETHOD.
-
-  METHOD initialization.
-    initialize_queue( start_node ).
-    initialize_parent_structure( start_node ).
   ENDMETHOD.
 
   METHOD initialize_queue.
